@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Tiny Fighter Arena</title>
+<meta name="description" content="Describe a fighter in one line. The AI builds them, draws them, and fights them in a tiny turn-based arena. Bring your own Pollen key." />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="bolt">⚔️</span>
+    <h1>Tiny&nbsp;Fighter&nbsp;Arena</h1>
+  </div>
+  <button id="keyBtn" class="ghost" type="button" title="Bring your own Pollen key">🔑 Pollen key</button>
+</header>
+
+<main id="main">
+
+  <!-- ===== Key setup ===== -->
+  <section id="keyPanel" class="panel hidden" aria-labelledby="keyTitle">
+    <h2 id="keyTitle">Bring your own Pollen</h2>
+    <p class="muted">
+      This arena calls the <b>Pollinations</b> text &amp; image APIs on your behalf.
+      Paste your own <b>Pollen API key</b> — it is kept <b>only in this browser's localStorage</b>
+      and is never sent anywhere except to <code>gen.pollinations.ai</code>.
+    </p>
+    <label class="field">
+      <span>Pollen API key</span>
+      <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="sk_... or your pollen key" />
+    </label>
+    <div class="row">
+      <button id="keySave" class="primary" type="button">Save key</button>
+      <button id="keyClear" class="ghost" type="button">Remove key</button>
+      <a class="link" href="https://gen.pollinations.ai/docs" target="_blank" rel="noopener">Get a key / docs ↗</a>
+    </div>
+    <p id="keyStatus" class="status" role="status"></p>
+  </section>
+
+  <!-- ===== Forge ===== -->
+  <section id="forgePanel" class="panel" aria-labelledby="forgeTitle">
+    <h2 id="forgeTitle">Forge your fighter</h2>
+    <p class="muted">One line. Be specific and clever — sharp descriptions earn better stats and meaner abilities.</p>
+
+    <label class="field">
+      <span>Your fighter</span>
+      <textarea id="descInput" rows="2" maxlength="400"
+        placeholder="e.g. a retired pastry chef who fights with a red-hot rolling pin and knows every weak point in a body"></textarea>
+    </label>
+
+    <div class="row">
+      <label class="field inline">
+        <span>Challenger</span>
+        <select id="challengerSelect"></select>
+      </label>
+      <label class="field inline">
+        <span>Seed</span>
+        <input id="seedInput" type="number" min="1" max="999999999" />
+      </label>
+    </div>
+
+    <div class="row">
+      <button id="rollSeed" class="ghost" type="button">🎲 New seed</button>
+      <button id="forgeBtn" class="primary big" type="button">⚒️ Forge &amp; Fight</button>
+      <button id="shareBtn" class="ghost hidden" type="button">🔗 Copy share link</button>
+    </div>
+    <p id="forgeStatus" class="status" role="status"></p>
+  </section>
+
+  <!-- ===== Arena ===== -->
+  <section id="arenaPanel" class="hidden" aria-labelledby="arenaTitle">
+    <h2 id="arenaTitle" class="sr-only">Arena</h2>
+
+    <div class="cards">
+      <article class="card fighter-card" id="playerCard">
+        <div class="portrait-wrap">
+          <img id="playerPortrait" class="portrait" alt="Player fighter portrait" />
+          <div class="portrait-fallback" aria-hidden="true">?</div>
+        </div>
+        <div class="card-body">
+          <h3 id="playerName">—</h3>
+          <p id="playerTitle" class="tag"></p>
+          <dl class="stats" id="playerStats"></dl>
+          <div class="hpbar"><div class="hpfill" id="playerHp"></div><span id="playerHpText">—</span></div>
+          <p id="playerStyle" class="muted small"></p>
+          <ul id="playerAbilities" class="chips"></ul>
+        </div>
+      </article>
+
+      <div class="vs">VS</div>
+
+      <article class="card fighter-card" id="enemyCard">
+        <div class="portrait-wrap">
+          <img id="enemyPortrait" class="portrait" alt="Challenger portrait" />
+          <div class="portrait-fallback" aria-hidden="true">?</div>
+        </div>
+        <div class="card-body">
+          <h3 id="enemyName">—</h3>
+          <p id="enemyTitle" class="tag"></p>
+          <dl class="stats" id="enemyStats"></dl>
+          <div class="hpbar"><div class="hpfill" id="enemyHp"></div><span id="enemyHpText">—</span></div>
+          <p id="enemyStyle" class="muted small"></p>
+          <ul id="enemyAbilities" class="chips"></ul>
+        </div>
+      </article>
+    </div>
+
+    <div class="logwrap">
+      <div id="battleLog" class="log" role="log" aria-live="polite"></div>
+    </div>
+
+    <div class="row center">
+      <button id="nextRoundBtn" class="primary big hidden" type="button">▶ Next round</button>
+      <button id="autoBtn" class="ghost hidden" type="button">⏩ Auto-fight</button>
+      <button id="rematchBtn" class="ghost hidden" type="button">↻ Rematch</button>
+      <button id="newFighterBtn" class="ghost hidden" type="button">✎ New fighter</button>
+    </div>
+    <p id="arenaStatus" class="status" role="status"></p>
+  </section>
+
+  <!-- ===== Ladder ===== -->
+  <section id="ladderPanel" class="panel" aria-labelledby="ladderTitle">
+    <h2 id="ladderTitle">Challenger ladder &amp; daily boss</h2>
+    <p class="muted">Beat a challenger to unlock the next. Progress is saved in this browser.</p>
+    <ol id="ladderList" class="ladder"></ol>
+    <div class="row">
+      <button id="dailyBossBtn" class="primary" type="button">👑 Fight today's boss</button>
+      <button id="resetProgress" class="ghost" type="button">Reset progress</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Built for the Pollinations community quest. Not affiliated with Pollinations. Your key stays in your browser.</p>
+  </footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
